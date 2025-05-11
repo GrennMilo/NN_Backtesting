@@ -1,0 +1,2369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Function Approximation with Neural Networks and Fourier Transform</title>
+    <script src="https://cdn.plot.ly/plotly-2.33.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #121212;
+            color: #e0e0e0;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .panel {
+            background-color: #1e1e1e;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+        h1, h2 {
+            color: #ffffff;
+            margin-top: 0;
+            font-weight: 400;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .chart-container {
+            position: relative;
+            height: 450px; /* Increased height for better visualization */
+            margin-bottom: 20px;
+            background-color: #252525;
+            border-radius: 4px;
+            padding: 10px;
+        }
+        .button {
+            padding: 10px 15px;
+            background-color: #2c6e49;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .button:hover {
+            background-color: #3a8a5f;
+        }
+        .button:disabled {
+            background-color: #1e3a2e;
+            cursor: not-allowed;
+        }
+        select, input {
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #333;
+            background-color: #252525;
+            color: #e0e0e0;
+            font-family: inherit;
+        }
+        label {
+            font-size: 14px;
+            color: #bbb;
+        }
+        .slider-container {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .slider {
+            flex-grow: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 5px;
+            background: #444;
+            border-radius: 5px;
+        }
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: #2c6e49;
+            cursor: pointer;
+        }
+        .slider::-moz-range-thumb {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: #2c6e49;
+            cursor: pointer;
+            border: none;
+        }
+        .slider:disabled {
+            opacity: 0.5;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #bbb;
+        }
+        .error-message {
+            color: #e57373;
+            margin: 15px 0;
+            padding: 10px;
+            border-left: 3px solid #e57373;
+            background-color: rgba(229, 115, 115, 0.1);
+            display: none;
+        }
+        .tab-container {
+            margin-bottom: 20px;
+        }
+        .tabs {
+            display: flex;
+            gap: 2px;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 15px;
+            background-color: #252525;
+            color: #bbb;
+            border: none;
+            border-radius: 4px 4px 0 0;
+            cursor: pointer;
+        }
+        .tab.active {
+            background-color: #2c6e49;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .ma-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .ma-tag {
+            background-color: #252525;
+            padding: 5px 10px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .ma-tag-close {
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .ma-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .ma-input-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            align-items: center;
+        }
+        .number-input {
+            width: 80px;
+        }
+        .connection-panel {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #2d2d2d;
+            border-radius: 4px;
+            border-left: 3px solid #2c6e49;
+        }
+        .radio-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        .radio-label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+        /* Checkbox styling */
+        .checkbox-container {
+            display: block;
+            position: relative;
+            padding-left: 30px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        
+        .checkbox-container input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+        
+        .checkmark {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 20px;
+            width: 20px;
+            background-color: #252525;
+            border: 1px solid #333;
+            border-radius: 3px;
+        }
+        
+        .checkbox-container:hover input ~ .checkmark {
+            background-color: #333;
+        }
+        
+        .checkbox-container input:checked ~ .checkmark {
+            background-color: #2c6e49;
+        }
+        
+        .checkmark:after {
+            content: "";
+            position: absolute;
+            display: none;
+        }
+        
+        .checkbox-container input:checked ~ .checkmark:after {
+            display: block;
+        }
+        
+        .checkbox-container .checkmark:after {
+            left: 7px;
+            top: 3px;
+            width: 5px;
+            height: 10px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+        
+        /* Backtest summary styling */
+        .backtest-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .backtest-metric {
+            background-color: #252525;
+            padding: 15px;
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        
+        .metric-label {
+            font-size: 12px;
+            color: #bbb;
+            margin-bottom: 5px;
+        }
+        
+        .metric-value {
+            font-size: 18px;
+            font-weight: 500;
+        }
+        
+        /* Trade table styling */
+        .trade-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: #252525;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .trade-table th,
+        .trade-table td {
+            padding: 10px 15px;
+            text-align: left;
+            border-bottom: 1px solid #333;
+        }
+        
+        .trade-table th {
+            background-color: #1e1e1e;
+            color: #bbb;
+            font-weight: 500;
+        }
+        
+        .trade-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .profit {
+            color: #33CFA5;
+        }
+        
+        .loss {
+            color: #F06A6A;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="panel">
+            <h1>Neural Network Function Approximation with Fourier Transform</h1>
+            <p>This application trains a neural network to match a given function and visualizes the learning process over time, including the Fourier transform.</p>
+            
+            <div class="tab-container">
+                <div class="tabs">
+                    <button class="tab active" data-tab="function-tab">Function Approximation</button>
+                    <button class="tab" data-tab="market-tab">Market Data Analysis</button>
+                </div>
+                
+                <div id="function-tab" class="tab-content active">
+                    <div class="controls">
+                        <div class="control-group">
+                            <label for="function">Target Function</label>
+                            <select id="function">
+                                <option value="sine">Sine Wave</option>
+                                <option value="complex">Complex Sine (Multiple Frequencies)</option>
+                                <option value="square">Square Wave</option>
+                                <option value="custom">Custom Function</option>
+                            </select>
+                        </div>
+                        
+                        <div class="control-group">
+                            <label for="epochs">Epochs</label>
+                            <input type="number" id="epochs" value="1000" min="100" max="10000">
+                        </div>
+                        
+                        <div class="control-group">
+                            <label for="learning_rate">Learning Rate</label>
+                            <input type="number" id="learning_rate" value="0.001" min="0.0001" max="0.1" step="0.0001">
+                        </div>
+                        
+                        <div class="control-group">
+                            <label for="hidden_layers">Network Architecture</label>
+                            <select id="hidden_layers">
+                                <option value="32,32">2 layers [32, 32]</option>
+                                <option value="64,64" selected>2 layers [64, 64]</option>
+                                <option value="128,128">2 layers [128, 128]</option>
+                                <option value="64,32">2 layers [64, 32]</option>
+                                <option value="32,32,32">3 layers [32, 32, 32]</option>
+                                <option value="64,64,64">3 layers [64, 64, 64]</option>
+                                <option value="128,64,32">3 layers [128, 64, 32]</option>
+                            </select>
+                        </div>
+                        
+                        <div class="control-group">
+                            <label class="checkbox-container">Initialize with average
+                                <input type="checkbox" id="initialize-with-average" checked>
+                                <span class="checkmark"></span>
+                            </label>
+                            <small>Start training from the data average instead of zero</small>
+                        </div>
+                        
+                        <button id="train-button" class="button">Train Model</button>
+                    </div>
+                </div>
+                
+                <div id="market-tab" class="tab-content">
+                    <div class="controls">
+                        <div class="control-group">
+                            <label for="asset">Asset</label>
+                            <select id="asset">
+                                <option value="BTC/USDT">Bitcoin (BTC/USDT)</option>
+                                <!-- Other assets will be populated dynamically -->
+                            </select>
+                        </div>
+                        
+                        <div class="control-group">
+                            <label for="timeframe">Timeframe</label>
+                            <select id="timeframe">
+                                <option value="1d">1 Day</option>
+                                <!-- Other timeframes will be populated dynamically -->
+                            </select>
+                        </div>
+                        
+                        <div class="control-group">
+                            <label for="limit">Data Points</label>
+                            <input type="number" id="limit" value="500" min="100" max="2000">
+                        </div>
+                        
+                        <button id="fetch-button" class="button">Fetch Data</button>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>Moving Averages</label>
+                        <div class="ma-tags" id="ma-tags">
+                            <!-- Moving average tags will be added here -->
+                        </div>
+                        <div class="ma-input-container">
+                            <input type="number" id="ma-period" class="number-input" placeholder="Period" min="2" max="500" value="50">
+                            <button id="add-ma-button" class="button">Add MA</button>
+                        </div>
+                    </div>
+                    
+                    <div class="connection-panel">
+                        <h3>Apply Neural Network to Moving Average</h3>
+                        <p>Select a moving average to apply the neural network with Fourier transform:</p>
+                        
+                        <div class="radio-group" id="ma-selection">
+                            <!-- Radio buttons for MA selection will be dynamically added -->
+                        </div>
+                        
+                        <div class="controls" style="margin-top: 15px;">
+                            <div class="control-group">
+                                <label for="nn-epochs">Neural Network Epochs</label>
+                                <input type="number" id="nn-epochs" value="1000" min="100" max="10000">
+                            </div>
+                            
+                            <div class="control-group">
+                                <label for="nn-learning-rate">Learning Rate</label>
+                                <input type="number" id="nn-learning-rate" value="0.001" min="0.0001" max="0.1" step="0.0001">
+                            </div>
+                            
+                            <div class="control-group">
+                                <label for="nn-hidden-layers">Network Architecture</label>
+                                <select id="nn-hidden-layers">
+                                    <option value="32,32">2 layers [32, 32]</option>
+                                    <option value="64,64" selected>2 layers [64, 64]</option>
+                                    <option value="128,128">2 layers [128, 128]</option>
+                                    <option value="64,32">2 layers [64, 32]</option>
+                                    <option value="32,32,32">3 layers [32, 32, 32]</option>
+                                    <option value="64,64,64">3 layers [64, 64, 64]</option>
+                                    <option value="128,64,32">3 layers [128, 64, 32]</option>
+                                </select>
+                            </div>
+                            
+                            <div class="control-group">
+                                <label class="checkbox-container">Initialize with average
+                                    <input type="checkbox" id="nn-initialize-with-average" checked>
+                                    <span class="checkmark"></span>
+                                </label>
+                                <small>Start training from the data average instead of zero</small>
+                            </div>
+                            
+                            <button id="apply-nn-button" class="button" disabled>Apply Neural Network</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="error-message" class="error-message"></div>
+            <div id="loading" class="loading">
+                <p>Processing... This may take a few moments.</p>
+            </div>
+        </div>
+        
+        <!-- Function approximation panels -->
+        <div class="panel function-panel">
+            <h2>Function Approximation</h2>
+            <div class="chart-container">
+                <div id="functionChart"></div>
+            </div>
+            
+            <div class="slider-container">
+                <span>Training Progress:</span>
+                <input type="range" id="progressSlider" class="slider" min="0" max="100" value="100" disabled aria-label="Training progress slider">
+                <span id="epochDisplay">Epoch: N/A</span>
+            </div>
+        </div>
+        
+        <div class="panel function-panel">
+            <h2>Loss Over Time</h2>
+            <div class="chart-container">
+                <div id="lossChart"></div>
+            </div>
+        </div>
+        
+        <div class="panel function-panel">
+            <h2>Fourier Transform</h2>
+            <div class="chart-container">
+                <div id="fourierChart"></div>
+            </div>
+        </div>
+        
+        <!-- Market data panels -->
+        <div class="panel market-panel" style="display: none;">
+            <h2>Price Chart with Moving Averages</h2>
+            <div class="chart-container">
+                <div id="priceChart" style="width:100%; height:100%;"></div>
+            </div>
+        </div>
+        
+        <!-- Neural Network on MA panels -->
+        <div class="panel market-panel" style="display: none;">
+            <h2>Moving Average Neural Network Approximation</h2>
+            <div class="chart-container">
+                <div id="maFunctionChart" style="width:100%; height:100%;"></div>
+            </div>
+            
+            <div class="slider-container">
+                <span>Training Progress:</span>
+                <input type="range" id="maProgressSlider" class="slider" min="0" max="100" value="100" disabled aria-label="MA training progress slider">
+                <span id="maEpochDisplay">Epoch: N/A</span>
+            </div>
+        </div>
+        
+        <div class="panel market-panel" style="display: none;">
+            <h2>MA Neural Network Loss</h2>
+            <div class="chart-container">
+                <div id="maLossChart" style="width:100%; height:100%;"></div>
+            </div>
+        </div>
+        
+        <div class="panel market-panel" style="display: none;">
+            <h2>MA Fourier Transform</h2>
+            <div class="chart-container">
+                <div id="maFourierChart" style="width:100%; height:100%;"></div>
+            </div>
+        </div>
+        
+        <!-- Backtesting panel -->
+        <div class="panel connection-panel" id="backtest-panel">
+            <h3>Backtest Trading Strategy</h3>
+            <p>Test a trading strategy based on slope changes in the neural network:</p>
+            <ul>
+                <li>When slope changes from negative to positive: Open Long</li>
+                <li>When slope changes from positive to negative: Close Long and Open Short</li>
+            </ul>
+            
+            <div class="controls" style="margin-top: 15px;">
+                <div class="control-group">
+                    <label for="initial-capital">Initial Capital</label>
+                    <input type="number" id="initial-capital" value="10000" min="100" max="1000000">
+                </div>
+                
+                <div class="control-group">
+                    <label for="position-size-pct">Position Size (%)</label>
+                    <input type="number" id="position-size-pct" value="100" min="1" max="100">
+                </div>
+                
+                <div class="control-group">
+                    <label for="commission-pct">Commission (%)</label>
+                    <input type="number" id="commission-pct" value="0.1" min="0" max="10" step="0.01">
+                </div>
+                
+                <div class="control-group">
+                    <label for="slippage-pct">Slippage (%)</label>
+                    <input type="number" id="slippage-pct" value="0.05" min="0" max="5" step="0.01">
+                </div>
+                
+                <button id="run-backtest-button" class="button" disabled>Run Backtest</button>
+            </div>
+        </div>
+        
+        <!-- Backtest results panel -->
+        <div class="panel market-panel" style="display: none;">
+            <h2>Backtest Results</h2>
+            <div id="backtest-summary" class="backtest-summary">
+                <div class="backtest-metric">
+                    <span class="metric-label">Initial Capital:</span>
+                    <span id="summary-initial-capital" class="metric-value">$10,000</span>
+                </div>
+                <div class="backtest-metric">
+                    <span class="metric-label">Final Capital:</span>
+                    <span id="summary-final-capital" class="metric-value">$0</span>
+                </div>
+                <div class="backtest-metric">
+                    <span class="metric-label">Total Return:</span>
+                    <span id="summary-total-return" class="metric-value">0%</span>
+                </div>
+                <div class="backtest-metric">
+                    <span class="metric-label">Annualized Return:</span>
+                    <span id="summary-annual-return" class="metric-value">0%</span>
+                </div>
+                <div class="backtest-metric">
+                    <span class="metric-label">Max Drawdown:</span>
+                    <span id="summary-max-drawdown" class="metric-value">0%</span>
+                </div>
+                <div class="backtest-metric">
+                    <span class="metric-label">Win Rate:</span>
+                    <span id="summary-win-rate" class="metric-value">0%</span>
+                </div>
+                <div class="backtest-metric">
+                    <span class="metric-label">Profit Factor:</span>
+                    <span id="summary-profit-factor" class="metric-value">0</span>
+                </div>
+                <div class="backtest-metric">
+                    <span class="metric-label">Sharpe Ratio:</span>
+                    <span id="summary-sharpe-ratio" class="metric-value">0</span>
+                </div>
+                <div class="backtest-metric">
+                    <span class="metric-label">Total Trades:</span>
+                    <span id="summary-total-trades" class="metric-value">0</span>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <div id="equityChart" style="width:100%; height:100%;"></div>
+            </div>
+            
+            <div class="chart-container">
+                <div id="tradesChart" style="width:100%; height:100%;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Global variables for charts
+        let functionChart, lossChart, fourierChart, priceChart;
+        let maFunctionChart, maLossChart, maFourierChart;
+        let trainingData = null;
+        let marketData = null;
+        let selectedMA = null;
+        let maTrainingData = null;
+        
+        // Colors for charts
+        let maColors = [
+            'rgb(75, 213, 141)',
+            'rgb(255, 168, 77)',
+            'rgb(80, 175, 255)',
+            'rgb(162, 115, 255)',
+            'rgb(255, 108, 120)'
+        ];
+        let maPeriods = [2, 20, 50, 200]; // Added 2-period MA to default set
+        
+        // Plotly dark theme configuration
+        const darkTheme = {
+            paper_bgcolor: '#252525',
+            plot_bgcolor: '#252525',
+            font: {
+                color: '#e0e0e0'
+            },
+            xaxis: {
+                gridcolor: 'rgba(255, 255, 255, 0.1)',
+                zerolinecolor: 'rgba(255, 255, 255, 0.2)'
+            },
+            yaxis: {
+                gridcolor: 'rgba(255, 255, 255, 0.1)',
+                zerolinecolor: 'rgba(255, 255, 255, 0.2)'
+            }
+        };
+        
+        // Tab switching
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabId = tab.getAttribute('data-tab');
+                    console.log(`Switching to tab: ${tabId}`);
+                    
+                    // Deactivate all tabs and contents
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+                    
+                    // Activate the selected tab and content
+                    tab.classList.add('active');
+                    document.getElementById(tabId).classList.add('active');
+                    
+                    // Show/hide relevant panels
+                    if (tabId === 'function-tab') {
+                        console.log('Showing function panels, hiding market panels');
+                        document.querySelectorAll('.function-panel').forEach(p => p.style.display = 'block');
+                        document.querySelectorAll('.market-panel').forEach(p => p.style.display = 'none');
+                        
+                        // Show backtest panel for function tab too
+                        document.getElementById('backtest-panel').style.display = 'block';
+                    } else {
+                        console.log('Showing market panels, hiding function panels');
+                        document.querySelectorAll('.function-panel').forEach(p => p.style.display = 'none');
+                        document.querySelectorAll('.market-panel').forEach(p => {
+                            console.log('Setting market panel to display: block');
+                            p.style.display = 'block';
+                            p.style.visibility = 'visible';
+                        });
+                        
+                        // Always show backtest panel
+                        document.getElementById('backtest-panel').style.display = 'block';
+                        
+                        // Check for price chart container visibility
+                        const priceChartContainer = document.querySelector('.chart-container #priceChart');
+                        if (priceChartContainer) {
+                            console.log(`Price chart container: ${priceChartContainer.offsetWidth}x${priceChartContainer.offsetHeight}`);
+                        } else {
+                            console.error('Price chart container not found');
+                        }
+                        
+                        // Debug market panels display
+                        const marketPanels = document.querySelectorAll('.market-panel');
+                        console.log(`Found ${marketPanels.length} market panels`);
+                        marketPanels.forEach((panel, i) => {
+                            console.log(`Panel ${i}: display=${panel.style.display}, visibility=${panel.style.visibility}`);
+                        });
+                        
+                        // Auto-fetch market data if none exists
+                        if (!marketData) {
+                            console.log('No market data found. Auto-fetching data...');
+                            setTimeout(() => {
+                                fetchMarketData();
+                            }, 100);
+                        } else {
+                            console.log('Market data already exists', marketData.symbol);
+                            
+                            // Make sure to update the chart when switching to market tab
+                            setTimeout(() => {
+                                console.log('Refreshing price chart with existing data');
+                                updatePriceChart(marketData);
+                            }, 100);
+                        }
+                    }
+                    
+                    // Resize all Plotly charts to ensure proper rendering
+                    setTimeout(() => {
+                        console.log('Resizing charts after tab switch');
+                        if (functionChart) Plotly.relayout(functionChart, {});
+                        if (lossChart) Plotly.relayout(lossChart, {});
+                        if (fourierChart) Plotly.relayout(fourierChart, {});
+                        if (priceChart) {
+                            console.log('Resizing price chart');
+                            Plotly.relayout(priceChart, {autosize: true});
+                        }
+                        if (maFunctionChart) Plotly.relayout(maFunctionChart, {});
+                        if (maLossChart) Plotly.relayout(maLossChart, {});
+                        if (maFourierChart) Plotly.relayout(maFourierChart, {});
+                    }, 300);
+                });
+            });
+            
+            // Force update layout on window resize
+            window.addEventListener('resize', function() {
+                if (priceChart) {
+                    console.log('Window resized, updating price chart');
+                    Plotly.relayout(priceChart, {autosize: true});
+                }
+            });
+        });
+        
+        // Initialize charts
+        function initCharts() {
+            // Function Approximation Chart
+            functionChart = document.getElementById('functionChart');
+            Plotly.newPlot(functionChart, [
+                {
+                    name: 'Target Function',
+                    x: [],
+                    y: [],
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: {
+                        color: 'rgb(80, 175, 255)',
+                        width: 2
+                    }
+                },
+                {
+                    name: 'Neural Network Output',
+                    x: [],
+                    y: [],
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: {
+                        color: 'rgb(75, 213, 141)',
+                        width: 2
+                    }
+                }
+            ], {
+                title: 'Function Approximation',
+                xaxis: {
+                    title: 'x'
+                },
+                yaxis: {
+                    title: 'y'
+                },
+                ...darkTheme,
+                showlegend: true,
+                legend: {
+                    x: 0,
+                    y: 1
+                },
+                margin: {
+                    l: 60,
+                    r: 60,
+                    t: 60,
+                    b: 60
+                }
+            }, {
+                responsive: true,
+                displayModeBar: true,
+                modeBarButtonsToAdd: ['zoom2d', 'pan2d', 'resetScale2d']
+            });
+            
+            // Loss Chart
+            lossChart = document.getElementById('lossChart');
+            Plotly.newPlot(lossChart, [
+                {
+                    name: 'Training Loss',
+                    x: [],
+                    y: [],
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: {
+                        color: 'rgb(255, 168, 77)',
+                        width: 2
+                    }
+                }
+            ], {
+                title: 'Loss Over Time',
+                xaxis: {
+                    title: 'Epoch'
+                },
+                yaxis: {
+                    title: 'Loss',
+                    type: 'log'
+                },
+                ...darkTheme,
+                showlegend: true,
+                legend: {
+                    x: 0,
+                    y: 1
+                },
+                margin: {
+                    l: 50,
+                    r: 50,
+                    t: 50,
+                    b: 50
+                }
+            }, {
+                responsive: true,
+                displayModeBar: true,
+                modeBarButtonsToAdd: ['zoom2d', 'pan2d', 'resetScale2d']
+            });
+            
+            // Fourier Transform Chart
+            fourierChart = document.getElementById('fourierChart');
+            Plotly.newPlot(fourierChart, [
+                {
+                    name: 'Frequency Magnitude',
+                    x: [],
+                    y: [],
+                    type: 'bar',
+                    marker: {
+                        color: 'rgb(162, 115, 255)'
+                    }
+                }
+            ], {
+                title: 'Fourier Transform',
+                xaxis: {
+                    title: 'Frequency'
+                },
+                yaxis: {
+                    title: 'Magnitude'
+                },
+                ...darkTheme,
+                showlegend: true,
+                legend: {
+                    x: 0,
+                    y: 1
+                },
+                margin: {
+                    l: 50,
+                    r: 50,
+                    t: 50,
+                    b: 50
+                }
+            }, {
+                responsive: true,
+                displayModeBar: true,
+                modeBarButtonsToAdd: ['zoom2d', 'pan2d', 'resetScale2d']
+            });
+            
+            // Price Chart with Moving Averages
+            priceChart = document.getElementById('priceChart');
+            Plotly.newPlot(priceChart, [
+                {
+                    name: 'Price',
+                    x: [],
+                    y: [],
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: {
+                        color: 'rgb(255, 255, 255)',
+                        width: 2
+                    }
+                }
+            ], {
+                title: 'Price Chart with Moving Averages',
+                xaxis: {
+                    title: 'Date',
+                    rangeslider: {
+                        visible: true,
+                        thickness: 0.05
+                    }
+                },
+                yaxis: {
+                    title: 'Price',
+                    fixedrange: false
+                },
+                ...darkTheme,
+                showlegend: true,
+                legend: {
+                    x: 0,
+                    y: 1
+                },
+                margin: {
+                    l: 60,
+                    r: 60,
+                    t: 60,
+                    b: 80
+                },
+                height: 450 // Increase height for better visibility
+            }, {
+                responsive: true,
+                displayModeBar: true,
+                modeBarButtonsToAdd: ['zoom2d', 'pan2d', 'resetScale2d', 'autoScale2d']
+            });
+            
+            // Initialize MA Neural Network charts
+            initMANeuralNetworkCharts();
+        }
+        
+        // Initialize charts for MA neural network analysis
+        function initMANeuralNetworkCharts() {
+            // MA Function Chart
+            maFunctionChart = document.getElementById('maFunctionChart');
+            Plotly.newPlot(maFunctionChart, [
+                {
+                    name: 'Original MA',
+                    x: [],
+                    y: [],
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: {
+                        color: 'rgb(80, 175, 255)',
+                        width: 2
+                    }
+                },
+                {
+                    name: 'Neural Network Output',
+                    x: [],
+                    y: [],
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: {
+                        color: 'rgb(75, 213, 141)',
+                        width: 2
+                    }
+                }
+            ], {
+                title: 'Moving Average Approximation',
+                xaxis: {
+                    title: 'Date Index'
+                },
+                yaxis: {
+                    title: 'Value'
+                },
+                ...darkTheme,
+                showlegend: true,
+                legend: {
+                    x: 0,
+                    y: 1
+                },
+                margin: {
+                    l: 60,
+                    r: 60,
+                    t: 60,
+                    b: 60
+                },
+                height: 450
+            }, {
+                responsive: true,
+                displayModeBar: true,
+                modeBarButtonsToAdd: ['zoom2d', 'pan2d', 'resetScale2d']
+            });
+            
+            // MA Loss Chart
+            maLossChart = document.getElementById('maLossChart');
+            Plotly.newPlot(maLossChart, [
+                {
+                    name: 'Training Loss',
+                    x: [],
+                    y: [],
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: {
+                        color: 'rgb(255, 168, 77)',
+                        width: 2
+                    }
+                }
+            ], {
+                title: 'Loss Over Time',
+                xaxis: {
+                    title: 'Epoch'
+                },
+                yaxis: {
+                    title: 'Loss',
+                    type: 'log'
+                },
+                ...darkTheme,
+                showlegend: true,
+                legend: {
+                    x: 0,
+                    y: 1
+                },
+                margin: {
+                    l: 60,
+                    r: 60,
+                    t: 60,
+                    b: 60
+                },
+                height: 450
+            }, {
+                responsive: true,
+                displayModeBar: true,
+                modeBarButtonsToAdd: ['zoom2d', 'pan2d', 'resetScale2d']
+            });
+            
+            // MA Fourier Chart
+            maFourierChart = document.getElementById('maFourierChart');
+            Plotly.newPlot(maFourierChart, [
+                {
+                    name: 'Frequency Magnitude',
+                    x: [],
+                    y: [],
+                    type: 'bar',
+                    marker: {
+                        color: 'rgb(162, 115, 255)'
+                    }
+                }
+            ], {
+                title: 'Moving Average Fourier Transform',
+                xaxis: {
+                    title: 'Frequency'
+                },
+                yaxis: {
+                    title: 'Magnitude'
+                },
+                ...darkTheme,
+                showlegend: true,
+                legend: {
+                    x: 0,
+                    y: 1
+                },
+                margin: {
+                    l: 60,
+                    r: 60,
+                    t: 60,
+                    b: 60
+                },
+                height: 450
+            }, {
+                responsive: true,
+                displayModeBar: true,
+                modeBarButtonsToAdd: ['zoom2d', 'pan2d', 'resetScale2d']
+            });
+        }
+        
+        // Update charts with data
+        function updateCharts(data, trainingIndex = -1) {
+            // Update function chart
+            const xData = data.x_data;
+            const yTrue = data.y_true;
+            
+            // If trainingIndex is -1, use the final prediction, otherwise use training data
+            let yPred;
+            if (trainingIndex === -1 || !data.training_data.predictions[trainingIndex]) {
+                yPred = data.y_pred;
+            } else {
+                yPred = data.training_data.predictions[trainingIndex];
+            }
+            
+            Plotly.update(functionChart, {
+                x: [[...xData], [...xData]],
+                y: [[...yTrue], [...yPred]]
+            }, {}, [0, 1]);
+            
+            // Update loss chart
+            Plotly.update(lossChart, {
+                x: [[...data.training_data.epochs]],
+                y: [[...data.training_data.loss]]
+            }, {}, [0]);
+            
+            // Update Fourier chart
+            const fourierCoeffs = trainingIndex === -1 ? 
+                data.training_data.fourier_coeffs[data.training_data.fourier_coeffs.length - 1] :
+                data.training_data.fourier_coeffs[trainingIndex];
+            
+            if (fourierCoeffs) {
+                // Only show first 20 frequencies for clarity
+                const numFreqs = Math.min(20, fourierCoeffs.length);
+                const freqLabels = Array.from({length: numFreqs}, (_, i) => i);
+                
+                Plotly.update(fourierChart, {
+                    x: [[...freqLabels]],
+                    y: [[...fourierCoeffs.slice(0, numFreqs)]]
+                }, {}, [0]);
+            }
+        }
+        
+        // Update price chart with market data
+        function updatePriceChart(data) {
+            if (!data) {
+                console.error("No data provided to updatePriceChart");
+                showError("No market data available. Please fetch data first.");
+                return;
+            }
+            
+            if (data.error) {
+                console.error("Error in market data:", data.error);
+                showError("Failed to update price chart: " + data.error);
+                return;
+            }
+            
+            console.log("Updating price chart with data:", {
+                symbol: data.symbol,
+                timeframe: data.timeframe,
+                dataPointCount: data.prices?.length || 0,
+                datesCount: data.dates?.length || 0,
+                maPeriodsAvailable: Object.keys(data.moving_averages || {})
+            });
+            
+            if (!data.prices || !data.dates || data.prices.length === 0 || data.dates.length === 0) {
+                console.error("Invalid or empty price/date data");
+                showError("No price data available for the selected timeframe and asset.");
+                return;
+            }
+            
+            // Ensure we're working with proper date objects for better visualization
+            const formattedDates = data.dates.map(dateStr => {
+                // Check if we need to handle hourly data with specific hour
+                if (dateStr.length > 10) {
+                    return new Date(dateStr);
+                }
+                return new Date(dateStr);
+            });
+            
+            // Ensure all data arrays are properly sanitized and of correct types
+            const sanitizedPrices = data.prices.map(p => {
+                if (p === null || isNaN(p) || !isFinite(p)) return null;
+                return parseFloat(p);  // Ensure we're working with numeric values
+            });
+            
+            // Debug logging for troubleshooting
+            console.log("Price data sample:", sanitizedPrices.slice(0, 5));
+            console.log("Date data sample:", formattedDates.slice(0, 5));
+            
+            // Clean div container to start fresh
+            document.getElementById('priceChart').innerHTML = '';
+            
+            // Prepare price trace
+            let traces = [{
+                name: 'Price',
+                x: formattedDates,
+                y: sanitizedPrices,
+                type: 'scatter',
+                mode: 'lines',
+                line: {
+                    color: 'rgb(255, 255, 255)',
+                    width: 2
+                }
+            }];
+            
+            // Add moving average traces
+            if (data.moving_averages) {
+                Object.keys(data.moving_averages).forEach((period, index) => {
+                    const maData = data.moving_averages[period];
+                    if (!maData || maData.length === 0) {
+                        console.warn(`No data for MA ${period}`);
+                        return;
+                    }
+                    
+                    // Sanitize MA data
+                    const sanitizedMA = maData.map(p => {
+                        if (p === null || isNaN(p) || !isFinite(p)) return null;
+                        return parseFloat(p);  // Ensure we're working with numeric values
+                    });
+                    
+                    // Verify MA data integrity
+                    console.log(`MA ${period} data sample:`, sanitizedMA.slice(0, 5));
+                    
+                    const colorIndex = index % maColors.length;
+                    traces.push({
+                        name: `MA ${period}`,
+                        x: formattedDates,
+                        y: sanitizedMA,
+                        type: 'scatter',
+                        mode: 'lines',
+                        line: {
+                            color: maColors[colorIndex],
+                            width: 2
+                        }
+                    });
+                });
+            }
+            
+            console.log(`Created ${traces.length} traces for price chart`);
+            
+            try {
+                // Create new plot with good defaults for financial data
+                Plotly.newPlot('priceChart', traces, {
+                    title: `${data.symbol} - ${data.timeframe} Chart`,
+                    paper_bgcolor: '#252525',
+                    plot_bgcolor: '#252525',
+                    font: { color: '#e0e0e0' },
+                    xaxis: {
+                        title: 'Date',
+                        gridcolor: 'rgba(255, 255, 255, 0.1)',
+                        rangeslider: {
+                            visible: false  // Disable rangeslider for better performance
+                        },
+                        autorange: true
+                    },
+                    yaxis: {
+                        title: 'Price',
+                        gridcolor: 'rgba(255, 255, 255, 0.1)',
+                        autorange: true
+                    },
+                    showlegend: true,
+                    legend: {
+                        x: 0,
+                        y: 1
+                    },
+                    margin: {
+                        l: 60,
+                        r: 60,
+                        t: 60,
+                        b: 60
+                    },
+                    height: 450
+                }, {
+                    responsive: true,
+                    displayModeBar: true,
+                    modeBarButtonsToAdd: ['zoom2d', 'pan2d', 'resetScale2d', 'autoScale2d']
+                }).then(() => {
+                    console.log("Price chart rendered successfully");
+                    
+                    // Force redraw to ensure proper layout
+                    window.dispatchEvent(new Event('resize'));
+                }).catch(err => {
+                    console.error("Error in Plotly.newPlot:", err);
+                    showError("Failed to render price chart: " + err.message);
+                });
+            } catch (error) {
+                console.error("Error rendering price chart:", error);
+                showError("Error rendering price chart: " + error.message);
+            }
+            
+            // Update MA selection options
+            updateMASelectionOptions(data);
+        }
+        
+        // Update MA neural network charts
+        function updateMANeuralNetworkCharts(data, trainingIndex = -1) {
+            if (!data || !data.training_data) {
+                console.error("Missing MA neural network data", data);
+                showError("Missing data for MA neural network visualization");
+                return;
+            }
+            
+            // Create indices array for x-axis
+            const xIndices = Array.from({length: data.ma_values.length}, (_, i) => i);
+            
+            // Get prediction data
+            let yPred;
+            if (trainingIndex === -1 || !data.training_data.predictions[trainingIndex]) {
+                yPred = data.nn_pred;
+            } else {
+                yPred = data.training_data.predictions[trainingIndex];
+            }
+            
+            // Update MA function chart
+            Plotly.update(maFunctionChart, {
+                x: [[...xIndices], [...xIndices]],
+                y: [[...data.ma_values], [...yPred]]
+            }, {
+                title: `Moving Average ${data.ma_period} Approximation`,
+                margin: {
+                    l: 60,
+                    r: 60,
+                    t: 60,
+                    b: 60
+                }
+            }, [0, 1]);
+            
+            // Update MA loss chart
+            Plotly.update(maLossChart, {
+                x: [[...data.training_data.epochs]],
+                y: [[...data.training_data.loss]]
+            }, {
+                margin: {
+                    l: 60,
+                    r: 60,
+                    t: 60,
+                    b: 60
+                }
+            }, [0]);
+            
+            // Update MA Fourier chart
+            const fourierCoeffs = trainingIndex === -1 ? 
+                data.training_data.fourier_coeffs[data.training_data.fourier_coeffs.length - 1] :
+                data.training_data.fourier_coeffs[trainingIndex];
+            
+            if (fourierCoeffs) {
+                // Only show first 20 frequencies for clarity
+                const numFreqs = Math.min(20, fourierCoeffs.length);
+                const freqLabels = Array.from({length: numFreqs}, (_, i) => i);
+                
+                Plotly.update(maFourierChart, {
+                    x: [[...freqLabels]],
+                    y: [[...fourierCoeffs.slice(0, numFreqs)]]
+                }, {
+                    title: `Moving Average ${data.ma_period} Fourier Transform`,
+                    margin: {
+                        l: 60,
+                        r: 60,
+                        t: 60,
+                        b: 60
+                    }
+                }, [0]);
+            }
+        }
+        
+        // Update MA selection options
+        function updateMASelectionOptions(data) {
+            if (!data || data.error) {
+                return;
+            }
+            
+            const container = document.getElementById('ma-selection');
+            container.innerHTML = '';
+            
+            Object.keys(data.moving_averages || {}).forEach((period, index) => {
+                const colorIndex = index % maColors.length;
+                
+                const label = document.createElement('label');
+                label.className = 'radio-label';
+                
+                const input = document.createElement('input');
+                input.type = 'radio';
+                input.name = 'ma-radio';
+                input.value = period;
+                input.addEventListener('change', () => {
+                    selectedMA = period;
+                    document.getElementById('apply-nn-button').disabled = false;
+                });
+                
+                const color = document.createElement('span');
+                color.className = 'ma-color';
+                color.style.backgroundColor = maColors[colorIndex];
+                
+                const text = document.createElement('span');
+                text.textContent = `MA ${period}`;
+                
+                label.appendChild(input);
+                label.appendChild(color);
+                label.appendChild(text);
+                container.appendChild(label);
+            });
+            
+            // Reset selected MA
+            selectedMA = null;
+            document.getElementById('apply-nn-button').disabled = true;
+        }
+        
+        // Load data from server
+        async function loadData() {
+            try {
+                const response = await fetch('/get_data');
+                const data = await response.json();
+                
+                if (data.error) {
+                    console.error(data.error);
+                    showError(data.error);
+                    return null;
+                }
+                
+                return data;
+            } catch (error) {
+                console.error('Error loading data:', error);
+                showError('Error loading data. Please try again.');
+                return null;
+            }
+        }
+        
+        // Load market data from server
+        async function loadMarketData() {
+            try {
+                const response = await fetch('/get_market_data');
+                const rawText = await response.text();
+                
+                // Pre-process to handle NaN values
+                const cleanedText = rawText.replace(/NaN/g, 'null');
+                
+                try {
+                    const data = JSON.parse(cleanedText);
+                    
+                    if (data.error) {
+                        console.error(data.error);
+                        showError(data.error);
+                        return null;
+                    }
+                    
+                    return data;
+                } catch (jsonError) {
+                    console.error('Error parsing market data JSON:', jsonError, rawText.substring(0, 100) + '...');
+                    showError('Error parsing market data. The server returned invalid JSON.');
+                    return null;
+                }
+            } catch (error) {
+                console.error('Error loading market data:', error);
+                showError('Error loading market data. Please try again.');
+                return null;
+            }
+        }
+        
+        // Load MA neural network data
+        async function loadMANeuralNetworkData() {
+            try {
+                const response = await fetch('/get_ma_nn_data');
+                const data = await response.json();
+                
+                if (data.error) {
+                    // Don't show error for initial state - this is expected behavior
+                    if (data.error !== 'No MA neural network data available. Please train a model first.') {
+                        console.error(data.error);
+                        showError(data.error);
+                    }
+                    return null;
+                }
+                
+                return data;
+            } catch (error) {
+                console.error('Error loading MA neural network data:', error);
+                showError('Error loading neural network data. Please try again.');
+                return null;
+            }
+        }
+        
+        // Show error message
+        function showError(message) {
+            const errorElement = document.getElementById('error-message');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            
+            // Hide after 5 seconds
+            setTimeout(() => {
+                errorElement.style.display = 'none';
+            }, 5000);
+        }
+        
+        // Train model
+        async function trainModel() {
+            const functionName = document.getElementById('function').value;
+            const epochs = document.getElementById('epochs').value;
+            const learningRate = document.getElementById('learning_rate').value;
+            const hiddenLayersStr = document.getElementById('hidden_layers').value;
+            const initializeWithAverage = document.getElementById('initialize-with-average').checked;
+            
+            // Parse hidden layers string into array of integers
+            const hiddenSizes = hiddenLayersStr.split(',').map(size => parseInt(size.trim()));
+            
+            document.getElementById('train-button').disabled = true;
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error-message').style.display = 'none';
+            
+            try {
+                const response = await fetch('/train', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        function: functionName,
+                        epochs: epochs,
+                        learning_rate: learningRate,
+                        hidden_sizes: hiddenSizes,
+                        initialize_with_average: initializeWithAverage
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    // Load the new data
+                    const data = await loadData();
+                    if (data) {
+                        trainingData = data;
+                        updateCharts(data);
+                        setupSlider(data);
+                    }
+                } else if (result.status === 'error') {
+                    showError(`Training error: ${result.message}`);
+                }
+            } catch (error) {
+                console.error('Error training model:', error);
+                showError('Failed to communicate with the server. Please check your connection.');
+            } finally {
+                document.getElementById('train-button').disabled = false;
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+        
+        // Apply Neural Network to Moving Average
+        async function applyNeuralNetworkToMA() {
+            if (!selectedMA || !marketData) {
+                showError('Please select a moving average first and ensure market data is loaded.');
+                return;
+            }
+            
+            const epochs = document.getElementById('nn-epochs').value;
+            const learningRate = document.getElementById('nn-learning-rate').value;
+            const hiddenLayersStr = document.getElementById('nn-hidden-layers').value;
+            const initializeWithAverage = document.getElementById('nn-initialize-with-average').checked;
+            
+            // Parse hidden layers string into array of integers
+            const hiddenSizes = hiddenLayersStr.split(',').map(size => parseInt(size.trim()));
+            
+            document.getElementById('apply-nn-button').disabled = true;
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error-message').style.display = 'none';
+            
+            try {
+                console.log(`Training neural network for MA ${selectedMA} with ${epochs} epochs and learning rate ${learningRate}`);
+                
+                // Check if we have enough data points
+                if (!marketData.moving_averages[selectedMA] || marketData.moving_averages[selectedMA].length < 10) {
+                    throw new Error(`Not enough data points for MA ${selectedMA}. Need at least 10 points.`);
+                }
+                
+                const response = await fetch('/train_ma_nn', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        ma_period: parseInt(selectedMA, 10),
+                        epochs: parseInt(epochs, 10),
+                        learning_rate: parseFloat(learningRate),
+                        hidden_sizes: hiddenSizes,
+                        initialize_with_average: initializeWithAverage
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    let errorMessage = "Server returned status " + response.status;
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        if (errorJson.message) {
+                            errorMessage = errorJson.message;
+                        }
+                    } catch (e) {
+                        // If we can't parse as JSON, just use text
+                        if (errorText) {
+                            errorMessage = errorText.substring(0, 200); // Limit length
+                        }
+                    }
+                    throw new Error(errorMessage);
+                }
+                
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    // Load the new data
+                    const data = await loadMANeuralNetworkData();
+                    if (data) {
+                        maTrainingData = data;
+                        updateMANeuralNetworkCharts(data);
+                        setupMASlider(data);
+                        console.log(`Successfully trained neural network for MA ${selectedMA}`);
+                        
+                        // Enable backtest button
+                        document.getElementById('run-backtest-button').disabled = false;
+                    } else {
+                        throw new Error('Failed to load MA neural network data after training');
+                    }
+                } else if (result.status === 'error') {
+                    throw new Error(`Training error: ${result.message}`);
+                }
+            } catch (error) {
+                console.error('Error training MA model:', error);
+                showError(`Failed to train neural network: ${error.message}`);
+            } finally {
+                document.getElementById('apply-nn-button').disabled = false;
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+        
+        // Fetch market data
+        async function fetchMarketData() {
+            const asset = document.getElementById('asset').value;
+            const timeframe = document.getElementById('timeframe').value;
+            const limit = document.getElementById('limit').value;
+            
+            document.getElementById('fetch-button').disabled = true;
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error-message').style.display = 'none';
+            
+            try {
+                const response = await fetch('/market_data', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        symbol: asset,
+                        timeframe: timeframe,
+                        ma_periods: maPeriods,
+                        limit: limit
+                    })
+                });
+                
+                const rawText = await response.text();
+                
+                // Pre-process to handle NaN values
+                const cleanedText = rawText.replace(/NaN/g, 'null');
+                
+                try {
+                    const result = JSON.parse(cleanedText);
+                    
+                    if (!result.error) {
+                        marketData = result;
+                        updatePriceChart(result);
+                        
+                        // Reset MA neural network data
+                        selectedMA = null;
+                        document.getElementById('apply-nn-button').disabled = true;
+                    } else {
+                        showError(`Error: ${result.error}`);
+                    }
+                } catch (jsonError) {
+                    console.error('Error parsing market data JSON:', jsonError, rawText.substring(0, 100) + '...');
+                    showError('Error parsing market data. The server returned invalid JSON.');
+                }
+            } catch (error) {
+                console.error('Error fetching market data:', error);
+                showError('Failed to communicate with the server. Please check your connection.');
+            } finally {
+                document.getElementById('fetch-button').disabled = false;
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+        
+        // Setup progress slider
+        function setupSlider(data) {
+            const slider = document.getElementById('progressSlider');
+            const epochDisplay = document.getElementById('epochDisplay');
+            
+            if (!data || !data.training_data || !data.training_data.predictions || !data.training_data.predictions.length) {
+                slider.disabled = true;
+                epochDisplay.textContent = 'Epoch: N/A';
+                return;
+            }
+            
+            slider.min = 0;
+            slider.max = data.training_data.predictions.length - 1;
+            slider.value = data.training_data.predictions.length - 1;
+            slider.disabled = false;
+            
+            epochDisplay.textContent = `Epoch: ${data.training_data.epochs[data.training_data.epochs.length - 1] || 'N/A'}`;
+            
+            // Clear previous event listener to prevent multiple bindings
+            slider.oninput = null;
+            
+            slider.oninput = function() {
+                const index = parseInt(this.value);
+                updateCharts(data, index);
+                
+                // Update epoch display (with safeguards)
+                if (data.training_data.epochs && index < data.training_data.epochs.length) {
+                    const epochValue = data.training_data.epochs[index];
+                    epochDisplay.textContent = `Epoch: ${epochValue || 'N/A'}`;
+                } else {
+                    epochDisplay.textContent = 'Epoch: N/A';
+                }
+            };
+        }
+        
+        // Setup MA progress slider
+        function setupMASlider(data) {
+            const slider = document.getElementById('maProgressSlider');
+            const epochDisplay = document.getElementById('maEpochDisplay');
+            
+            if (!data || !data.training_data || !data.training_data.predictions || !data.training_data.predictions.length) {
+                slider.disabled = true;
+                epochDisplay.textContent = 'Epoch: N/A';
+                return;
+            }
+            
+            slider.min = 0;
+            slider.max = data.training_data.predictions.length - 1;
+            slider.value = data.training_data.predictions.length - 1;
+            slider.disabled = false;
+            
+            epochDisplay.textContent = `Epoch: ${data.training_data.epochs[data.training_data.epochs.length - 1] || 'N/A'}`;
+            
+            // Clear previous event listener to prevent multiple bindings
+            slider.oninput = null;
+            
+            slider.oninput = function() {
+                const index = parseInt(this.value);
+                updateMANeuralNetworkCharts(data, index);
+                
+                // Update epoch display (with safeguards)
+                if (data.training_data.epochs && index < data.training_data.epochs.length) {
+                    const epochValue = data.training_data.epochs[index];
+                    epochDisplay.textContent = `Epoch: ${epochValue || 'N/A'}`;
+                } else {
+                    epochDisplay.textContent = 'Epoch: N/A';
+                }
+            };
+        }
+        
+        // Load available assets and timeframes
+        async function loadAssetOptions() {
+            try {
+                // Load assets
+                const assetResponse = await fetch('/available_assets');
+                const assetData = await assetResponse.json();
+                
+                const assetSelect = document.getElementById('asset');
+                assetSelect.innerHTML = ''; // Clear existing options
+                
+                // Add crypto assets
+                if (assetData.crypto && assetData.crypto.length > 0) {
+                    const cryptoGroup = document.createElement('optgroup');
+                    cryptoGroup.label = 'Cryptocurrencies';
+                    
+                    assetData.crypto.forEach(crypto => {
+                        const option = document.createElement('option');
+                        option.value = crypto;
+                        option.textContent = crypto;
+                        cryptoGroup.appendChild(option);
+                    });
+                    
+                    assetSelect.appendChild(cryptoGroup);
+                }
+                
+                // Add stock assets
+                if (assetData.stocks && assetData.stocks.length > 0) {
+                    const stockGroup = document.createElement('optgroup');
+                    stockGroup.label = 'Stocks';
+                    
+                    assetData.stocks.forEach(stock => {
+                        const option = document.createElement('option');
+                        option.value = stock;
+                        option.textContent = stock;
+                        stockGroup.appendChild(option);
+                    });
+                    
+                    assetSelect.appendChild(stockGroup);
+                }
+                
+                // Load timeframes
+                const timeframeResponse = await fetch('/available_timeframes');
+                const timeframes = await timeframeResponse.json();
+                
+                const timeframeSelect = document.getElementById('timeframe');
+                timeframeSelect.innerHTML = ''; // Clear existing options
+                
+                timeframes.forEach(tf => {
+                    const option = document.createElement('option');
+                    option.value = tf;
+                    
+                    // Format display name
+                    let displayName = tf;
+                    if (tf === '1d') displayName = '1 Day';
+                    else if (tf === '1w') displayName = '1 Week';
+                    else if (tf.endsWith('m')) displayName = `${tf.slice(0, -1)} Minutes`;
+                    else if (tf.endsWith('h')) displayName = `${tf.slice(0, -1)} Hours`;
+                    
+                    option.textContent = displayName;
+                    timeframeSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading asset options:', error);
+                showError('Failed to load available assets and timeframes.');
+            }
+        }
+        
+        // Update MA tags display
+        function updateMATags() {
+            const container = document.getElementById('ma-tags');
+            container.innerHTML = '';
+            
+            maPeriods.forEach((period, index) => {
+                const tag = document.createElement('div');
+                tag.className = 'ma-tag';
+                
+                const colorIndex = index % maColors.length;
+                const color = document.createElement('span');
+                color.className = 'ma-color';
+                color.style.backgroundColor = maColors[colorIndex];
+                
+                const text = document.createElement('span');
+                text.textContent = `MA ${period}`;
+                
+                const close = document.createElement('span');
+                close.className = 'ma-tag-close';
+                close.textContent = '×';
+                close.onclick = () => {
+                    maPeriods = maPeriods.filter(p => p !== period);
+                    updateMATags();
+                    
+                    // Update chart if market data exists
+                    if (marketData) {
+                        fetchMarketData();
+                    }
+                };
+                
+                tag.appendChild(color);
+                tag.appendChild(text);
+                tag.appendChild(close);
+                container.appendChild(tag);
+            });
+        }
+        
+        // Add event listener for adding new MA periods
+        function setupMAControls() {
+            document.getElementById('add-ma-button').addEventListener('click', () => {
+                const input = document.getElementById('ma-period');
+                const period = parseInt(input.value);
+                
+                if (period && period >= 2 && period <= 500) {
+                    // Check if period already exists
+                    if (!maPeriods.includes(period)) {
+                        maPeriods.push(period);
+                        maPeriods.sort((a, b) => a - b);
+                        updateMATags();
+                        
+                        // Update chart if market data exists
+                        if (marketData) {
+                            fetchMarketData();
+                        }
+                    }
+                    
+                    input.value = '';
+                } else {
+                    showError('Please enter a valid period between 2 and 500.');
+                }
+            });
+            
+            // Add event listener for applying neural network to MA
+            document.getElementById('apply-nn-button').addEventListener('click', applyNeuralNetworkToMA);
+        }
+        
+        // Add function to run backtest
+        async function runBacktest() {
+            document.getElementById('run-backtest-button').disabled = true;
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error-message').style.display = 'none';
+            
+            try {
+                // Get backtest parameters
+                const initialCapital = parseFloat(document.getElementById('initial-capital').value);
+                const positionSizePct = parseFloat(document.getElementById('position-size-pct').value);
+                const commissionPct = parseFloat(document.getElementById('commission-pct').value);
+                const slippagePct = parseFloat(document.getElementById('slippage-pct').value);
+                
+                // Validate inputs
+                if (isNaN(initialCapital) || initialCapital <= 0) {
+                    throw new Error('Initial capital must be a positive number');
+                }
+                if (isNaN(positionSizePct) || positionSizePct <= 0 || positionSizePct > 100) {
+                    throw new Error('Position size must be between 1 and 100 percent');
+                }
+                if (isNaN(commissionPct) || commissionPct < 0) {
+                    throw new Error('Commission percentage must be zero or positive');
+                }
+                if (isNaN(slippagePct) || slippagePct < 0) {
+                    throw new Error('Slippage percentage must be zero or positive');
+                }
+                
+                // Run backtest
+                const response = await fetch('/run_backtest', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        initial_capital: initialCapital,
+                        position_size_pct: positionSizePct,
+                        commission_pct: commissionPct,
+                        slippage_pct: slippagePct
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    let errorMessage = "Server returned status " + response.status;
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        if (errorJson.message) {
+                            errorMessage = errorJson.message;
+                        }
+                    } catch (e) {
+                        // If we can't parse as JSON, just use text
+                        if (errorText) {
+                            errorMessage = errorText.substring(0, 200);
+                        }
+                    }
+                    throw new Error(errorMessage);
+                }
+                
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    // Update UI with backtest results
+                    updateBacktestResults(result.data);
+                } else if (result.status === 'error') {
+                    throw new Error(`Backtest error: ${result.message}`);
+                }
+            } catch (error) {
+                console.error('Error running backtest:', error);
+                showError(`Failed to run backtest: ${error.message}`);
+            } finally {
+                document.getElementById('run-backtest-button').disabled = false;
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        // Function to load backtest results
+        async function loadBacktestResults() {
+            try {
+                const response = await fetch('/get_backtest_results');
+                const data = await response.json();
+                
+                if (data.error) {
+                    console.log(data.error); // Just log, don't show error to user
+                    return null;
+                }
+                
+                updateBacktestResults(data);
+                return data;
+            } catch (error) {
+                console.error('Error loading backtest results:', error);
+                return null;
+            }
+        }
+
+        // Function to update backtest results in the UI
+        function updateBacktestResults(data) {
+            // Update summary metrics
+            document.getElementById('summary-initial-capital').textContent = formatCurrency(data.initial_capital);
+            document.getElementById('summary-final-capital').textContent = formatCurrency(data.final_capital);
+            document.getElementById('summary-total-return').textContent = formatPercent(data.total_return);
+            document.getElementById('summary-max-drawdown').textContent = formatPercent(data.max_drawdown_pct);
+            document.getElementById('summary-win-rate').textContent = formatPercent(data.win_rate);
+            document.getElementById('summary-profit-factor').textContent = data.profit_factor.toFixed(2);
+            document.getElementById('summary-sharpe-ratio').textContent = data.sharpe_ratio.toFixed(2);
+            document.getElementById('summary-total-trades').textContent = data.total_trades;
+            
+            // Calculate and display annualized return
+            const annualizedReturn = calculateAnnualizedReturn(data);
+            document.getElementById('summary-annual-return').textContent = formatPercent(annualizedReturn);
+            
+            // Apply color to total return and annualized return based on profitability
+            const totalReturnElement = document.getElementById('summary-total-return');
+            const annualReturnElement = document.getElementById('summary-annual-return');
+            
+            if (data.total_return > 0) {
+                totalReturnElement.classList.add('profit');
+                totalReturnElement.classList.remove('loss');
+                annualReturnElement.classList.add('profit');
+                annualReturnElement.classList.remove('loss');
+            } else {
+                totalReturnElement.classList.add('loss');
+                totalReturnElement.classList.remove('profit');
+                annualReturnElement.classList.add('loss');
+                annualReturnElement.classList.remove('profit');
+            }
+            
+            // Plot equity curve
+            plotEquityCurve(data);
+            
+            // Plot trades on price chart
+            plotTradesOnChart(data);
+            
+            // Make sure backtest results panel is visible
+            document.querySelectorAll('.market-panel').forEach(panel => {
+                panel.style.display = 'block';
+            });
+        }
+
+        // Function to calculate annualized return
+        function calculateAnnualizedReturn(data) {
+            if (!data.dates || data.dates.length < 2) {
+                return 0;
+            }
+            
+            // Calculate the time period in years
+            const firstDate = new Date(data.dates[0]);
+            const lastDate = new Date(data.dates[data.dates.length - 1]);
+            const daysDiff = (lastDate - firstDate) / (1000 * 60 * 60 * 24);
+            const yearFraction = daysDiff / 365;
+            
+            // If the time period is too short, return the total return
+            if (yearFraction < 0.01) {
+                return data.total_return;
+            }
+            
+            // Calculate annualized return using the formula: (1 + totalReturn/100)^(1/years) - 1
+            const totalReturnDecimal = data.total_return / 100;
+            const annualizedReturn = (Math.pow(1 + totalReturnDecimal, 1 / yearFraction) - 1) * 100;
+            
+            return annualizedReturn;
+        }
+
+        // Function to format currency values
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(value);
+        }
+
+        // Function to format percentage values
+        function formatPercent(value) {
+            return value.toFixed(2) + '%';
+        }
+
+        // Function to plot equity curve
+        function plotEquityCurve(data) {
+            if (!data || !data.equity_curve || !data.dates) {
+                console.error("Missing required data for equity chart", data);
+                showError("Missing required data for equity chart");
+                return;
+            }
+            
+            console.log("Plotting equity curve with data:", {
+                equityCurveLength: data.equity_curve?.length || 0,
+                datesLength: data.dates?.length || 0
+            });
+            
+            const equityChart = document.getElementById('equityChart');
+            if (!equityChart) {
+                console.error("Equity chart element not found");
+                return;
+            }
+            
+            // Clean container
+            equityChart.innerHTML = '';
+            
+            // Sanitize equity curve data
+            const sanitizedEquity = data.equity_curve.map(p => {
+                if (p === null || isNaN(p) || !isFinite(p)) return null;
+                return p;
+            });
+            
+            try {
+                Plotly.newPlot(equityChart, [
+                    {
+                        name: 'Equity',
+                        x: data.dates,
+                        y: sanitizedEquity,
+                        type: 'scatter',
+                        mode: 'lines',
+                        line: {
+                            color: 'rgb(75, 213, 141)',
+                            width: 2
+                        }
+                    }
+                ], {
+                    title: 'Equity Curve',
+                    paper_bgcolor: '#252525',
+                    plot_bgcolor: '#252525',
+                    font: { color: '#e0e0e0' },
+                    xaxis: {
+                        title: 'Date',
+                        gridcolor: 'rgba(255, 255, 255, 0.1)',
+                        rangeslider: {
+                            visible: false  // Disable for better performance
+                        }
+                    },
+                    yaxis: {
+                        title: 'Equity',
+                        gridcolor: 'rgba(255, 255, 255, 0.1)',
+                    },
+                    showlegend: true,
+                    legend: {
+                        x: 0,
+                        y: 1
+                    },
+                    margin: {
+                        l: 60,
+                        r: 60,
+                        t: 60,
+                        b: 60
+                    }
+                }, {
+                    responsive: true
+                }).then(() => {
+                    console.log("Equity chart rendered successfully");
+                    
+                    // Force redraw to ensure proper layout
+                    window.dispatchEvent(new Event('resize'));
+                }).catch(err => {
+                    console.error("Error in Plotly.newPlot for equity chart:", err);
+                    showError("Failed to render equity chart: " + err.message);
+                });
+            } catch (error) {
+                console.error("Error rendering equity chart:", error);
+                showError("Error rendering equity chart: " + error.message);
+            }
+        }
+
+        // Function to plot trades on price chart
+        function plotTradesOnChart(data) {
+            if (!data || !data.dates || !data.prices) {
+                console.error("Missing required data for trades chart", data);
+                showError("Missing required data for trades chart");
+                return;
+            }
+            
+            console.log("Plotting trades with data:", {
+                datesCount: data.dates?.length || 0,
+                pricesCount: data.prices?.length || 0,
+                tradesCount: data.trades?.length || 0
+            });
+            
+            const tradesChart = document.getElementById('tradesChart');
+            if (!tradesChart) {
+                console.error("Trades chart element not found");
+                return;
+            }
+            
+            // Clean container
+            tradesChart.innerHTML = '';
+            
+            // Sanitize price data
+            const sanitizedPrices = data.prices.map(p => {
+                if (p === null || isNaN(p) || !isFinite(p)) return null;
+                return p;
+            });
+            
+            // Create price trace
+            const traces = [
+                {
+                    name: 'Price',
+                    x: data.dates,
+                    y: sanitizedPrices,
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: {
+                        color: 'rgb(255, 255, 255)',
+                        width: 2
+                    }
+                }
+            ];
+            
+            // Add trade markers
+            if (data.trades && data.trades.length > 0) {
+                console.log("Processing trades:", data.trades.length);
+                
+                // Create arrays for trade markers
+                const longEntryX = [];
+                const longEntryY = [];
+                const longExitX = [];
+                const longExitY = [];
+                const shortEntryX = [];
+                const shortEntryY = [];
+                const shortExitX = [];
+                const shortExitY = [];
+                
+                // Process each trade
+                for (const trade of data.trades) {
+                    // Skip invalid trades
+                    if (!trade.entry_date || !trade.exit_date) continue;
+                    
+                    if (trade.type === 'long') {
+                        longEntryX.push(trade.entry_date);
+                        longEntryY.push(trade.entry_price);
+                        
+                        longExitX.push(trade.exit_date);
+                        longExitY.push(trade.exit_price);
+                    } else if (trade.type === 'short') {
+                        shortEntryX.push(trade.entry_date);
+                        shortEntryY.push(trade.entry_price);
+                        
+                        shortExitX.push(trade.exit_date);
+                        shortExitY.push(trade.exit_price);
+                    }
+                }
+                
+                // Add trade markers if we have any trades
+                if (longEntryX.length > 0) {
+                    traces.push({
+                        name: 'Long Entry',
+                        x: longEntryX,
+                        y: longEntryY,
+                        type: 'scatter',
+                        mode: 'markers',
+                        marker: {
+                            color: 'rgb(75, 213, 141)',
+                            size: 10,
+                            symbol: 'triangle-up'
+                        }
+                    });
+                    
+                    traces.push({
+                        name: 'Long Exit',
+                        x: longExitX,
+                        y: longExitY,
+                        type: 'scatter',
+                        mode: 'markers',
+                        marker: {
+                            color: 'rgb(75, 213, 141)',
+                            size: 10,
+                            symbol: 'triangle-down'
+                        }
+                    });
+                }
+                
+                if (shortEntryX.length > 0) {
+                    traces.push({
+                        name: 'Short Entry',
+                        x: shortEntryX,
+                        y: shortEntryY,
+                        type: 'scatter',
+                        mode: 'markers',
+                        marker: {
+                            color: 'rgb(255, 108, 120)',
+                            size: 10,
+                            symbol: 'triangle-down'
+                        }
+                    });
+                    
+                    traces.push({
+                        name: 'Short Exit',
+                        x: shortExitX,
+                        y: shortExitY,
+                        type: 'scatter',
+                        mode: 'markers',
+                        marker: {
+                            color: 'rgb(255, 108, 120)',
+                            size: 10,
+                            symbol: 'triangle-up'
+                        }
+                    });
+                }
+            }
+            
+            try {
+                Plotly.newPlot(tradesChart, traces, {
+                    title: 'Price Chart with Trades',
+                    paper_bgcolor: '#252525',
+                    plot_bgcolor: '#252525',
+                    font: { color: '#e0e0e0' },
+                    xaxis: {
+                        title: 'Date',
+                        gridcolor: 'rgba(255, 255, 255, 0.1)',
+                        rangeslider: {
+                            visible: false // Disable for better performance
+                        }
+                    },
+                    yaxis: {
+                        title: 'Price',
+                        gridcolor: 'rgba(255, 255, 255, 0.1)',
+                    },
+                    showlegend: true,
+                    legend: {
+                        x: 0,
+                        y: 1
+                    },
+                    margin: {
+                        l: 60,
+                        r: 60,
+                        t: 60,
+                        b: 60
+                    }
+                }, {
+                    responsive: true
+                }).then(() => {
+                    console.log("Trades chart rendered successfully");
+                    
+                    // Force redraw to ensure proper layout
+                    window.dispatchEvent(new Event('resize'));
+                }).catch(err => {
+                    console.error("Error in Plotly.newPlot for trades chart:", err);
+                    showError("Failed to render trades chart: " + err.message);
+                });
+            } catch (error) {
+                console.error("Error rendering trades chart:", error);
+                showError("Error rendering trades chart: " + error.message);
+            }
+        }
+
+        // Update the page initialization to set up event handlers
+        function setupEventHandlers() {
+            // Set up backtest button event listener
+            document.getElementById('run-backtest-button').addEventListener('click', runBacktest);
+        }
+
+        // Initialize the application
+        async function init() {
+            initCharts();
+            
+            // Load assets and timeframes
+            await loadAssetOptions();
+            
+            // Initialize MA tags
+            updateMATags();
+            setupMAControls();
+            
+            // Load existing data if available
+            const data = await loadData();
+            if (data) {
+                trainingData = data;
+                updateCharts(data);
+                setupSlider(data);
+            }
+            
+            const marketDataResponse = await loadMarketData();
+            if (marketDataResponse) {
+                console.log('Loaded initial market data:', marketDataResponse.symbol);
+                marketData = marketDataResponse;
+                updatePriceChart(marketDataResponse);
+            } else {
+                console.log('No initial market data available');
+            }
+            
+            const maNNData = await loadMANeuralNetworkData();
+            if (maNNData) {
+                maTrainingData = maNNData;
+                updateMANeuralNetworkCharts(maNNData);
+                setupMASlider(maNNData);
+                
+                // Enable backtest button if we have NN data
+                document.getElementById('run-backtest-button').disabled = false;
+            }
+            
+            // Load backtest results if available
+            await loadBacktestResults();
+            
+            // Setup additional event listeners
+            setupEventHandlers();
+            
+            // Setup event listeners
+            document.getElementById('train-button').addEventListener('click', trainModel);
+            document.getElementById('fetch-button').addEventListener('click', fetchMarketData);
+        }
+        
+        // Start the application when the page loads
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html> 
